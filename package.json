@@ -1,19 +1,14 @@
 {
   "name": "replace-it",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
-    "@types/node": "^24.5.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
-  }
+  "keywords": ["template", "replace", "placeholders", "custom-regex"],
+  "author": "Faiz Sulistiyo",
+  "license": "MIT"
 }
