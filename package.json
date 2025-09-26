@@ -3,12 +3,22 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["template", "replace", "placeholders", "custom-regex"],
+  "keywords": [
+    "template",
+    "replace",
+    "placeholders",
+    "custom-regex"
+  ],
   "author": "Faiz Sulistiyo",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.5.2"
+  }
 }

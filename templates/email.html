@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <p>Hello {{ user.name }}</p>
+
+    <p>Balance: {{ formatCurrency(user.balance, "id-ID", "IDR", 0) }}</p>
+
+    {{#if user.balance > 0}}
+    <p>Status: Active</p>
+    {{else}}
+    <p>Status: Inactive</p>
+    {{/if}}
+
+    <ul>
+        {{#each items}}
+        <li>{{ name }} - {{ formatCurrency(price, "en-US", "USD", 2) }}</li>
+        {{/each}}
+    </ul>
+</body>
+
+</html>

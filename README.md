@@ -1,16 +1,18 @@
 # replace-it
 
-A lightweight and flexible template engine for Node.js that replaces `{{ ... }}` placeholders with dynamic values, supports evaluating expressions, injecting helpers, and defining **custom regex-based handlers**.
+A lightweight template engine for Node.js written in TypeScript.  
+Supports **expressions, conditionals, loops, custom helpers, custom handlers, and template loading from file paths**.
 
 ---
 
 ## ✨ Features
 
-- Replace simple placeholders like `{{ user.name }}`
-- Evaluate JS expressions inside `{{ ... }}`
-- Inject reusable helpers (e.g., `formatDate`, `formatCurrency`)
-- Extend syntax with **custom regex handlers**
-- Zero dependencies, fast, and easy to use
+- `{{ expression }}` → evaluate JS expressions
+- `{{#if condition}}...{{else}}...{{/if}}` → conditional rendering
+- `{{#each path}}...{{/each}}` → iterate arrays
+- `{{ formatCurrency(value, locale, currency, precision) }}` → built-in currency formatting
+- `loadTemplate(filePath)` → load HTML template files
+- Custom **helpers** and **handlers** extensibility
 
 ---
 
@@ -20,7 +22,7 @@ A lightweight and flexible template engine for Node.js that replaces `{{ ... }}`
 npm install replace-it
 ```
 
-or with yarn:
+or
 
 ```bash
 yarn add replace-it
@@ -28,84 +30,143 @@ yarn add replace-it
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Usage
 
-### Basic placeholder replacement
+### Basic Example
 
 ```ts
 import { renderTemplate } from "replace-it";
 
-const template = "Hello {{ user.name }}, you have {{ user.balance }} points.";
+const template = `
+  <p>Hello {{ user.name }}</p>
+  <p>Balance: {{ formatCurrency(user.balance, "id-ID", "IDR", 0) }}</p>
+`;
 
 const result = renderTemplate({
   template,
   data: {
-    user: { name: "Faiz", balance: 1000 }
-  }
+    user: { name: "Faiz", balance: 50000 },
+  },
 });
 
 console.log(result);
-// => "Hello Faiz, you have 1000 points."
+```
+
+**Output:**
+
+```html
+<p>Hello Faiz</p>
+<p>Balance: Rp50.000</p>
 ```
 
 ---
 
-### Expressions
-
-You can evaluate JavaScript expressions directly inside the `{{ ... }}` block.
+### Load Template from File
 
 ```ts
-const template = "Next year, {{ user.age + 1 }} years old.";
+import { renderTemplate, loadTemplate } from "replace-it";
+
+const template = loadTemplate("templates/invoice.html");
 
 const result = renderTemplate({
   template,
-  data: { user: { age: 29 } }
+  data: {
+    user: { name: "Faiz", balance: 75000 },
+  },
 });
 
 console.log(result);
-// => "Next year, 30 years old."
 ```
 
 ---
 
-### Injecting Helpers
-
-Helpers are functions you can pass in and use directly inside expressions.
+### Conditionals
 
 ```ts
-const template = "Today is {{ formatDate(today) }}";
+const template = `
+  {{#if user.isMember}}
+    <p>Welcome back, {{ user.name }}!</p>
+  {{else}}
+    <p>Hello Guest!</p>
+  {{/if}}
+`;
 
 const result = renderTemplate({
   template,
-  data: { today: new Date("2025-09-26") },
+  data: { user: { isMember: true, name: "Faiz" } },
+});
+```
+
+**Output:**
+
+```html
+<p>Welcome back, Faiz!</p>
+```
+
+---
+
+### Loops
+
+```ts
+const template = `
+  <ul>
+    {{#each items}}
+      <li>{{ name }} - {{ formatCurrency(price, "id-ID", "IDR") }}</li>
+    {{/each}}
+  </ul>
+`;
+
+const result = renderTemplate({
+  template,
+  data: {
+    items: [
+      { name: "Apple", price: 10000 },
+      { name: "Orange", price: 15000 },
+    ],
+  },
+});
+```
+
+**Output:**
+
+```html
+<ul>
+  <li>Apple - Rp10.000</li>
+  <li>Orange - Rp15.000</li>
+</ul>
+```
+
+---
+
+### Custom Helpers
+
+```ts
+const template = `
+  <p>{{ shout(user.name) }}</p>
+`;
+
+const result = renderTemplate({
+  template,
+  data: { user: { name: "faiz" } },
   helpers: {
-    formatDate: (date: Date) => date.toISOString().split("T")[0]
-  }
+    shout: (str: string) => str.toUpperCase() + "!",
+  },
 });
+```
 
-console.log(result);
-// => "Today is 2025-09-26"
+**Output:**
+
+```html
+<p>FAIZ!</p>
 ```
 
 ---
 
 ### Custom Handlers
 
-Custom handlers let you extend the engine with new syntax.  
-You pass them as an array of `{ pattern, handler }` objects.
-
 ```ts
-import { renderTemplate } from "replace-it";
-
-// Helper for nested property lookup
-function getValueByPath(obj: Record<string, any>, path: string): any {
-  return path.split(".").reduce((acc, part) => acc?.[part], obj);
-}
-
 const template = `
-Hello {{ user.name }}
-{{#upper user.name}}
-{{#repeat user.name 3}}
+  (( user.name ))
 `;
 
 const result = renderTemplate({
@@ -113,105 +174,42 @@ const result = renderTemplate({
   data: { user: { name: "Faiz" } },
   handlers: [
     {
-      pattern: /\{\{#upper (.*?)\}\}/g,
-      handler: (match, scope) => {
-        const value = getValueByPath(scope, match[1].trim());
-        return String(value ?? "").toUpperCase();
-      },
-    },
-    {
-      pattern: /\{\{#repeat (.*?) (\d+)\}\}/g,
-      handler: (match, scope) => {
-        const value = getValueByPath(scope, match[1].trim());
-        const times = Number(match[2]);
-        return String(value ?? "").repeat(times);
+      pattern: /\(\(\s*(.*?)\s*\)\)/g,
+      handler: (match, scope, helpers) => {
+        const expression = match[1];
+        const fn = new Function(...Object.keys(scope), `return (${expression});`);
+        return fn(...Object.values(scope));
       },
     },
   ],
 });
+```
 
-console.log(result);
-// =>
-// Hello Faiz
-// FAIZ
-// FaizFaizFaiz
+**Output:**
+
+```html
+Faiz
 ```
 
 ---
 
-## ⚡ API Reference
+## 🛠 API
 
 ### `renderTemplate(options: RenderOptions): string`
 
-Render a template string with placeholders, expressions, and custom handlers.
+Options:
 
-#### Parameters
+- `template` → template string
+- `data` → object containing variables for binding
+- `helpers` → custom helper functions
+- `handlers` → custom regex handlers
 
-- **`template: string`**  
-  The template string containing placeholders.
+### `loadTemplate(filePath: string): string`
 
-- **`data: Record<string, any>`**  
-  The data object to resolve values from.
-
-- **`helpers?: Record<string, any>`**  
-  (Optional) Functions available inside expressions.  
-  Example: `{{ formatDate(date) }}`.
-
-- **`handlers?: { pattern: RegExp; handler: (match, scope, helpers) => string }[]`**  
-  (Optional) Array of custom regex handlers.  
-  - `pattern` → Regex used to match parts of the template.  
-  - `handler` → Function that returns a replacement string.  
-
-#### Returns
-- A new string with placeholders replaced.
+Loads an HTML file from the given path.
 
 ---
 
-## 📖 Examples
+## 📜 License
 
-### Using Math in templates
-
-```ts
-const template = "Total with tax: {{ price * 1.1 }}";
-
-const result = renderTemplate({
-  template,
-  data: { price: 100 }
-});
-
-console.log(result);
-// => "Total with tax: 110"
-```
-
----
-
-### Reusing helpers across templates
-
-```ts
-const helpers = {
-  upper: (str: string) => str.toUpperCase(),
-  formatCurrency: (value: number) => `$${value.toFixed(2)}`
-};
-
-const template = `
-Name: {{ upper(user.name) }}
-Balance: {{ formatCurrency(user.balance) }}
-`;
-
-const result = renderTemplate({
-  template,
-  data: { user: { name: "faiz", balance: 42.5 } },
-  helpers
-});
-
-console.log(result);
-// =>
-// Name: FAIZ
-// Balance: $42.50
-```
-
----
-
-## 📝 License
-
-MIT © 2025 [Faiz](https://github.com/your-username)
+MIT

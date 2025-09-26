@@ -1,37 +1,16 @@
-import { renderTemplate } from "./dist";
+import { renderTemplate, loadTemplate } from "./dist";
 
-function getValueByPath(obj: Record<string, any>, path: string): any {
-  return path.split(".").reduce((acc, part) => acc?.[part], obj);
-}
+const template = loadTemplate("templates/email.html");
 
-const template = `
-<div>
-  Hello {{ user.name }}
-  {{#upper user.name}}
-  {{#repeat user.name 3}}
-</div>
-`;
-
-const output = renderTemplate({
+const result = renderTemplate({
   template,
-  data: { user: { name: "Faiz" } },
-  handlers: [
-    {
-      pattern: /\{\{#upper (.*?)\}\}/g,
-      handler: (match, scope) => {
-        const value = getValueByPath(scope, match[1].trim());
-        return String(value ?? "").toUpperCase();
-      },
-    },
-    {
-      pattern: /\{\{#repeat (.*?) (\d+)\}\}/g,
-      handler: (match, scope) => {
-        const value = getValueByPath(scope, match[1].trim());
-        const times = Number(match[2]);
-        return String(value ?? "").repeat(times);
-      },
-    },
-  ],
+  data: {
+    user: { name: "Faiz", balance: 50000 },
+    items: [
+      { name: "Apple", price: 1.5 },
+      { name: "Banana", price: 2 },
+    ],
+  },
 });
 
-console.log(output);
+console.log(result);
